@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaCheck — Water Potability Predictor (Random Forest ML)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script src="model.js"></script>
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --primary-navy: #0c4a6e;
+            --primary-light: #38bdf8;
+            --primary-glow: rgba(56, 189, 248, 0.25);
+            --potable-color: #059669;
+            --potable-bg: #ecfdf5;
+            --potable-border: #a7f3d0;
+            --danger-color: #dc2626;
+            --danger-bg: #fef2f2;
+            --danger-border: #fecaca;
+            --surface-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 8px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 10px 25px -5px rgba(2, 132, 199, 0.08), 0 8px 10px -6px rgba(0,0,0,0.03);
+            --shadow-lg: 0 20px 35px -5px rgba(2, 132, 199, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--surface-bg);
+            color: var(--text-main);
+            line-height: 1.5;
+            min-height: 100vh;
+            padding: 24px 16px;
+        }
+
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #0c4a6e 100%);
+            border-radius: var(--radius-lg);
+            padding: 28px 32px;
+            color: white;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::after {
+            content: "";
+            position: absolute;
+            right: -40px;
+            bottom: -40px;
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-title {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .brand-text h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+
+        .brand-text p {
+            font-size: 13.5px;
+            color: #bae6fd;
+            font-weight: 500;
+        }
+
+        .header-badges {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge-pill {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #f0f9ff;
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Preset Bar */
+        .preset-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .preset-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .preset-btn {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .preset-btn:hover {
+            background: #e0f2fe;
+            border-color: #7dd3fc;
+            color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .preset-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+        }
+
+        /* Main Grid */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-subtitle {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Form Inputs */
+        .inputs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 18px;
+        }
+
+        .input-group {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            transition: all 0.2s ease;
+        }
+
+        .input-group:focus-within {
+            border-color: var(--primary);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .input-label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .input-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .input-value-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            background: #e0f2fe;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .input-hint {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: #cbd5e1;
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        input[type="number"] {
+            width: 82px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            text-align: right;
+            outline: none;
+        }
+
+        input[type="number"]:focus {
+            border-color: var(--primary);
+        }
+
+        .who-badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-top: 6px;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        .who-normal {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .who-warn {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Results Card */
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .verdict-banner {
+            border-radius: var(--radius-md);
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .verdict-banner.potable {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            box-shadow: 0 12px 24px -4px rgba(5, 150, 105, 0.3);
+        }
+
+        .verdict-banner.non-potable {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            box-shadow: 0 12px 24px -4px rgba(220, 38, 38, 0.3);
+        }
+
+        .verdict-icon {
+            font-size: 42px;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        .verdict-status {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+
+        .verdict-desc {
+            font-size: 13.5px;
+            opacity: 0.92;
+            line-height: 1.4;
+        }
+
+        .probability-meter-card {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 18px;
+        }
+
+        .prob-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .prob-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .prob-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .prob-bar-track {
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 100px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .prob-bar-fill {
+            height: 100%;
+            transition: width 0.3s ease, background 0.3s ease;
+            border-radius: 100px;
+        }
+
+        .prob-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* Quality Checklist */
+        .checklist {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: var(--radius-sm);
+            font-size: 12.5px;
+        }
+
+        .checklist-name {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .checklist-status {
+            font-weight: 700;
+            font-size: 11.5px;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .checklist-pass {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .checklist-fail {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Notice / Disclaimer */
+        .disclaimer-box {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            color: #0369a1;
+            font-size: 12px;
+            line-height: 1.5;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .disclaimer-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* Action Buttons */
+        .action-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-primary {
+            flex: 1;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid #cbd5e1;
+            padding: 14px 20px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-outline:hover {
+            background: #f1f5f9;
+            color: var(--text-main);
+        }
+
+        footer {
+            margin-top: 36px;
+            text-align: center;
+            font-size: 12.5px;
+            color: var(--text-muted);
+            padding-bottom: 24px;
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="brand-title">
+                <div class="brand-icon">💧</div>
+                <div class="brand-text">
+                    <h1>AquaCheck</h1>
+                    <p>Water Potability Predictor — Random Forest ML</p>
+                </div>
+            </div>
+            <div class="header-badges">
+                <span class="badge-pill">🌳 100 Decision Trees</span>
+                <span class="badge-pill">⚡ In-Browser Inference</span>
+                <span class="badge-pill" id="demoBadge">📊 Ready</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Quick Presets -->
+    <div class="preset-section">
+        <span class="preset-label">Water Sample Presets:</span>
+        <div class="preset-buttons">
+            <button class="preset-btn active" onclick="applyPreset('tap')">🚰 Municipal Tap Water</button>
+            <button class="preset-btn" onclick="applyPreset('spring')">⛰️ Natural Spring</button>
+            <button class="preset-btn" onclick="applyPreset('industrial')">🏭 Industrial Contaminated</button>
+            <button class="preset-btn" onclick="applyPreset('pond')">🍂 Stagnant Turbid Pond</button>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid-layout">
+        <!-- Input Form -->
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">🔬 Water Quality Parameters</h2>
+                    <p class="card-subtitle">Adjust laboratory readings to analyze drinking potability</p>
+                </div>
+                <button class="preset-btn" style="padding: 6px 12px;" onclick="resetForm()">🔄 Reset</button>
+            </div>
+
+            <div class="inputs-grid" id="inputsContainer">
+                <!-- Dynamically generated or static inputs -->
+            </div>
+
+            <div class="action-row">
+                <button class="btn-primary" onclick="runPrediction()">
+                    <span>🔮 Predict Potability</span>
+                </button>
+                <button class="btn-outline" onclick="resetForm()">Reset All</button>
+            </div>
+        </div>
+
+        <!-- Prediction Results & Quality Overview -->
+        <div class="results-container">
+            <!-- Verdict Banner -->
+            <div class="verdict-banner potable" id="verdictBanner">
+                <div class="verdict-icon" id="verdictIcon">✅</div>
+                <div class="verdict-status" id="verdictStatus">Predicted Potable</div>
+                <div class="verdict-desc" id="verdictDesc">The model found these readings consistent with safe, potable drinking water samples.</div>
+            </div>
+
+            <!-- Probability Bar -->
+            <div class="probability-meter-card">
+                <div class="prob-header">
+                    <span class="prob-title">Ensemble Consensus</span>
+                    <span class="prob-value" id="consensusPercent">78%</span>
+                </div>
+                <div class="prob-bar-track">
+                    <div class="prob-bar-fill" id="probFill" style="width: 78%; background: #059669;"></div>
+                </div>
+                <div class="prob-labels">
+                    <span>Non-Potable (0%)</span>
+                    <span style="font-weight:700;">Decision Threshold (50%)</span>
+                    <span>Potable (100%)</span>
+                </div>
+            </div>
+
+            <!-- Parameter Compliance Checklist -->
+            <div class="card" style="padding: 20px;">
+                <div class="card-header" style="margin-bottom: 12px; padding-bottom: 8px;">
+                    <h3 class="card-title" style="font-size: 14.5px;">📋 WHO / EPA Reference Standards</h3>
+                </div>
+                <ul class="checklist" id="complianceList">
+                    <!-- Populated dynamically -->
+                </ul>
+            </div>
+
+            <!-- Disclaimer -->
+            <div class="disclaimer-box">
+                <span class="disclaimer-icon">⚠️</span>
+                <div>
+                    <strong>Educational Demonstration Only:</strong> Machine learning predictions cannot substitute for certified laboratory chemical and biological testing. Do not drink water solely based on algorithmic estimations.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>AquaCheck &bull; Built with Kotlin & Jetpack Compose for Android & Standalone Modern Web &bull; Powered by Random Forest Ensemble</p>
+    </footer>
+</div>
+
+<script>
+    // Parameter definitions matching training data order
+    const PARAMS = [
+        { key: "ph", label: "pH", unit: "", min: 0.0, max: 14.0, step: 0.1, default: 7.2, hint: "Standard range: 6.5 – 8.5", whoMin: 6.5, whoMax: 8.5 },
+        { key: "Hardness", label: "Hardness", unit: "mg/L", min: 0, max: 350, step: 1, default: 180, hint: "Safe threshold: < 300 mg/L", whoMin: 0, whoMax: 300 },
+        { key: "Solids", label: "Solids / TDS", unit: "ppm", min: 0, max: 60000, step: 500, default: 15000, hint: "Dissolved solids: < 50,000 ppm", whoMin: 0, whoMax: 50000 },
+        { key: "Chloramines", label: "Chloramines", unit: "ppm", min: 0.0, max: 15.0, step: 0.1, default: 6.8, hint: "Disinfectant level: < 4 – 8 ppm", whoMin: 0, whoMax: 8.0 },
+        { key: "Sulfate", label: "Sulfate", unit: "mg/L", min: 0, max: 500, step: 5, default: 310, hint: "Typical safe limit: < 400 mg/L", whoMin: 0, whoMax: 400 },
+        { key: "Conductivity", label: "Conductivity", unit: "μS/cm", min: 0, max: 800, step: 5, default: 410, hint: "Electrical conductivity: < 700 μS/cm", whoMin: 0, whoMax: 700 },
+        { key: "Organic_carbon", label: "Organic Carbon", unit: "ppm", min: 0.0, max: 30.0, step: 0.1, default: 12.0, hint: "TOC reading: < 20 ppm", whoMin: 0, whoMax: 20 },
+        { key: "Trihalomethanes", label: "Trihalomethanes", unit: "μg/L", min: 0, max: 140, step: 1, default: 55, hint: "Disinfection byproducts: < 80 – 100 μg/L", whoMin: 0, whoMax: 80 },
+        { key: "Turbidity", label: "Turbidity", unit: "NTU", min: 0.0, max: 8.0, step: 0.1, default: 3.2, hint: "Clarity guideline: < 5.0 NTU", whoMin: 0, whoMax: 5.0 }
+    ];
+
+    const PRESETS = {
+        tap: {
+            ph: 7.2, Hardness: 180, Solids: 15000, Chloramines: 6.8, Sulfate: 310,
+            Conductivity: 410, Organic_carbon: 12.0, Trihalomethanes: 55, Turbidity: 3.2
+        },
+        spring: {
+            ph: 7.6, Hardness: 145, Solids: 12000, Chloramines: 4.5, Sulfate: 230,
+            Conductivity: 330, Organic_carbon: 8.2, Trihalomethanes: 28, Turbidity: 2.1
+        },
+        industrial: {
+            ph: 4.8, Hardness: 285, Solids: 46000, Chloramines: 11.2, Sulfate: 460,
+            Conductivity: 690, Organic_carbon: 24.8, Trihalomethanes: 112, Turbidity: 6.2
+        },
+        pond: {
+            ph: 8.9, Hardness: 240, Solids: 39000, Chloramines: 9.5, Sulfate: 395,
+            Conductivity: 580, Organic_carbon: 21.5, Trihalomethanes: 89, Turbidity: 5.9
+        }
+    };
+
+    const currentValues = {};
+
+    function initUI() {
+        const container = document.getElementById("inputsContainer");
+        container.innerHTML = "";
+
+        PARAMS.forEach(p => {
+            currentValues[p.key] = p.default;
+            const group = document.createElement("div");
+            group.className = "input-group";
+            group.innerHTML = `
+                <div class="input-label-row">
+                    <span class="input-title">${p.label} ${p.unit ? '(' + p.unit + ')' : ''}</span>
+                    <span class="input-value-badge" id="badge_${p.key}">${p.default}</span>
+                </div>
+                <div class="input-hint">${p.hint}</div>
+                <div class="slider-row">
+                    <input type="range" id="slider_${p.key}" min="${p.min}" max="${p.max}" step="${p.step}" value="${p.default}" oninput="syncFromSlider('${p.key}')">
+                    <input type="number" id="num_${p.key}" min="${p.min}" max="${p.max}" step="${p.step}" value="${p.default}" oninput="syncFromNumber('${p.key}')">
+                </div>
+                <div id="who_${p.key}"></div>
+            `;
+            container.appendChild(group);
+            updateWhoBadge(p.key, p.default);
+        });
+
+        if (typeof RF_MODEL !== 'undefined') {
+            const badge = document.getElementById("demoBadge");
+            if (RF_MODEL.is_demo) {
+                badge.innerText = "Demo Model";
+                badge.style.background = "rgba(245, 158, 11, 0.3)";
+            } else if (RF_MODEL.test_accuracy) {
+                badge.innerText = `Accuracy: ${(RF_MODEL.test_accuracy * 100).toFixed(1)}%`;
+            }
+        }
+
+        runPrediction();
+    }
+
+    function syncFromSlider(key) {
+        const val = parseFloat(document.getElementById(`slider_${key}`).value);
+        currentValues[key] = val;
+        document.getElementById(`num_${key}`).value = val;
+        document.getElementById(`badge_${key}`).innerText = val;
+        updateWhoBadge(key, val);
+        runPrediction();
+    }
+
+    function syncFromNumber(key) {
+        let val = parseFloat(document.getElementById(`num_${key}`).value);
+        if (isNaN(val)) return;
+        currentValues[key] = val;
+        document.getElementById(`slider_${key}`).value = val;
+        document.getElementById(`badge_${key}`).innerText = val;
+        updateWhoBadge(key, val);
+        runPrediction();
+    }
+
+    function updateWhoBadge(key, val) {
+        const p = PARAMS.find(item => item.key === key);
+        if (!p) return;
+        const el = document.getElementById(`who_${key}`);
+        const isOk = val >= p.whoMin && val <= p.whoMax;
+        el.className = `who-badge ${isOk ? 'who-normal' : 'who-warn'}`;
+        el.innerText = isOk ? "✓ Within standard guideline" : `⚠ Outside standard (${p.whoMin} - ${p.whoMax})`;
+    }
+
+    function applyPreset(name) {
+        document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+        if (event && event.currentTarget) event.currentTarget.classList.add('active');
+
+        const preset = PRESETS[name];
+        if (!preset) return;
+        Object.keys(preset).forEach(key => {
+            currentValues[key] = preset[key];
+            const slider = document.getElementById(`slider_${key}`);
+            const num = document.getElementById(`num_${key}`);
+            const badge = document.getElementById(`badge_${key}`);
+            if (slider) slider.value = preset[key];
+            if (num) num.value = preset[key];
+            if (badge) badge.innerText = preset[key];
+            updateWhoBadge(key, preset[key]);
+        });
+        runPrediction();
+    }
+
+    function resetForm() {
+        applyPreset('tap');
+    }
+
+    // Pure JavaScript Tree Traversal (identical to RandomForest.kt and scikit-learn)
+    function predictFromModel(inputArray) {
+        if (typeof RF_MODEL === 'undefined' || !RF_MODEL.trees) {
+            console.error("RF_MODEL not loaded");
+            return { prob: 0.5, percent: 50, isPotable: false };
+        }
+        // Match float32 precision
+        const x = inputArray.map(v => Math.fround(Number(v)));
+        const trees = RF_MODEL.trees;
+        let totalProb = 0.0;
+
+        for (let i = 0; i < trees.length; i++) {
+            const tr = trees[i];
+            let n = 0;
+            while (tr.l[n] !== -1) {
+                n = (x[tr.f[n]] <= tr.t[n]) ? tr.l[n] : tr.r[n];
+            }
+            totalProb += tr.p[n];
+        }
+
+        const avgProb = totalProb / trees.length;
+        return {
+            prob: avgProb,
+            percent: Math.round(avgProb * 100),
+            isPotable: avgProb > 0.5
+        };
+    }
+
+    function runPrediction() {
+        const featureVector = PARAMS.map(p => currentValues[p.key]);
+        const result = predictFromModel(featureVector);
+
+        // Update Verdict Banner
+        const banner = document.getElementById("verdictBanner");
+        const icon = document.getElementById("verdictIcon");
+        const status = document.getElementById("verdictStatus");
+        const desc = document.getElementById("verdictDesc");
+
+        if (result.isPotable) {
+            banner.className = "verdict-banner potable";
+            icon.innerText = "✅";
+            status.innerText = "Predicted Potable";
+            desc.innerText = "The model found these readings consistent with potable drinking water samples in its training set.";
+        } else {
+            banner.className = "verdict-banner non-potable";
+            icon.innerText = "⚠️";
+            status.innerText = "Predicted Non-Potable";
+            desc.innerText = "The model flagged these readings as inconsistent with safe drinking water. High likelihood of contamination.";
+        }
+
+        // Update Probability Meter
+        document.getElementById("consensusPercent").innerText = `${result.percent}%`;
+        const fill = document.getElementById("probFill");
+        fill.style.width = `${result.percent}%`;
+        fill.style.background = result.isPotable ? "#059669" : "#dc2626";
+
+        // Update Compliance Checklist
+        const checklist = document.getElementById("complianceList");
+        checklist.innerHTML = "";
+        PARAMS.forEach(p => {
+            const val = currentValues[p.key];
+            const pass = val >= p.whoMin && val <= p.whoMax;
+            const li = document.createElement("li");
+            li.className = "checklist-item";
+            li.innerHTML = `
+                <span class="checklist-name">${p.label}: <strong>${val} ${p.unit}</strong></span>
+                <span class="checklist-status ${pass ? 'checklist-pass' : 'checklist-fail'}">
+                    ${pass ? '✓ Compliant' : '⚠ Warning'}
+                </span>
+            `;
+            checklist.appendChild(li);
+        });
+    }
+
+    window.addEventListener("DOMContentLoaded", initUI);
+</script>
+</body>
+</html>
