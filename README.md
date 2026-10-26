@@ -1,6 +1,12 @@
 # 💧 AquaCheck — AI Water Potability Predictor
 
+[![GitHub Pages](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-0284c7?style=flat&logo=github)](https://auadith-lab.github.io/AquaCheck/)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-181717?style=flat&logo=github)](https://github.com/auadith-lab/AquaCheck)
+
 An intelligent, real-time water quality analyzer and potability predictor powered by an on-device **Random Forest Classifier** machine learning model. Available both as a modern **Native Android Application** (Jetpack Compose + Material 3) and a responsive **Standalone Web Application** (100% in-browser, zero server dependency).
+
+🌐 **Live Web Application**: [https://auadith-lab.github.io/AquaCheck/](https://auadith-lab.github.io/AquaCheck/)  
+📦 **GitHub Repository**: [https://github.com/auadith-lab/AquaCheck](https://github.com/auadith-lab/AquaCheck)
 
 ---
 
